@@ -1,0 +1,21 @@
+# Local environments and Python artifacts
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Raw and derived data stay local; provenance and instructions are tracked.
+data/*
+!data/README.md
+!data/source.json
+
+# Local run artifacts; reviewed benchmark summaries will be tracked explicitly.
+artifacts/
+.DS_Store
+.env
+.env.*
+!.env.example

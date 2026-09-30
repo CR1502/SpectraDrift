@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=75,<81"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spectradrift"
+version = "0.1.0"
+description = "Self-supervised process monitoring on the Tennessee Eastman benchmark"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dynamic = ["dependencies"]
+
+[project.scripts]
+spectradrift = "spectradrift.__main__:main"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]

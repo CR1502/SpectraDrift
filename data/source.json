@@ -1,0 +1,51 @@
+{
+  "title": "Additional Tennessee Eastman Process Simulation Data for Anomaly Detection Evaluation",
+  "authors": ["Cory A. Rieth", "Ben D. Amsel", "Randy Tran", "Maia B. Cook"],
+  "publisher": "Harvard Dataverse",
+  "doi": "10.7910/DVN/6C3JR1",
+  "dataset_version": "1.0",
+  "metadata_url": "https://dataverse.harvard.edu/api/datasets/:persistentId/?persistentId=doi:10.7910/DVN/6C3JR1",
+  "metadata_verified_on": "2026-09-30",
+  "process_channels": 52,
+  "metadata_columns": ["faultNumber", "simulationRun", "sample"],
+  "fault_types": 20,
+  "runs_per_condition": 500,
+  "sample_period_minutes": 3,
+  "training_samples_per_run": 500,
+  "testing_samples_per_run": 960,
+  "fault_injection_testing_hours": 8,
+  "test_normal_prefix_samples": 160,
+  "first_fault_sample_one_based": 161,
+  "onset_convention": "Samples 1-160 are the eight-hour normal prefix; sample 161 is the first fault-affected sample. This is an evaluation convention derived from the dataset description, not a per-row annotation.",
+  "files": [
+    {
+      "filename": "TEP_FaultFree_Training.RData",
+      "r_object": "fault_free_training",
+      "file_id": 3031241,
+      "size_bytes": 24678017,
+      "md5": "ec126484534331f85001d8c4ebce6d17",
+      "download_url": "https://dataverse.harvard.edu/api/access/datafile/3031241",
+      "purpose": "Normal-only model training and calibration on separate simulation runs"
+    },
+    {
+      "filename": "TEP_FaultFree_Testing.RData",
+      "r_object": "fault_free_testing",
+      "file_id": 3031240,
+      "size_bytes": 47327663,
+      "md5": "38ad9810fc871026157086ae2c2f0ee9",
+      "download_url": "https://dataverse.harvard.edu/api/access/datafile/3031240",
+      "purpose": "Held-out normal-operation false-positive evaluation"
+    },
+    {
+      "filename": "TEP_Faulty_Testing.RData",
+      "r_object": "faulty_testing",
+      "file_id": 3031243,
+      "size_bytes": 836882037,
+      "md5": "556bdb64c83021bc0c5f92e427753565",
+      "download_url": "https://dataverse.harvard.edu/api/access/datafile/3031243",
+      "purpose": "Evaluation only: fault detection latency and detection coverage"
+    }
+  ],
+  "excluded_file": "TEP_Faulty_Training.RData",
+  "excluded_reason": "Fault labels and faulty observations are not used to train or calibrate this self-supervised baseline."
+}
