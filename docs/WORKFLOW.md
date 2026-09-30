@@ -57,7 +57,7 @@ gh pr create --base main --head feat/data-preprocessing \
 
 The data/preprocessing PR has been merged. Its commands above are historical.
 
-## Current checkpoint: two-signal detector
+## Completed checkpoint: two-signal detector
 
 The implementation is on `feat/two-signal-detector`, created from the merged
 `origin/main`. It adds normal-only PCA reconstruction scoring, an independent
@@ -78,5 +78,35 @@ gh pr create --base main --head feat/two-signal-detector \
   --body "Fit PCA reconstruction scoring and an independent rolling KS statistic on normal operation, calibrate thresholds on disjoint normal runs, and combine flags with an OR rule. Add safe model persistence and test scoring. Real TEP check: 55 PCA components; 15 flags in 2,823 held-out normal windows (0.53% FPR on three runs). All 54 tests pass. Fault latency is next."
 ```
 
+The two-signal detector PR has been merged. Its commands above are historical.
+
+## Current checkpoint: benchmark evaluation
+
+The implementation is on `feat/benchmark-evaluation`, created from merged
+`origin/main`. It adds onset-aware latency, explicit misses and coverage,
+component breakdowns, held-out FPR, saved score archives, and generated reports.
+All three required TEP files have been downloaded and publisher-checksummed.
+
+The frozen model was evaluated on 200 faulty simulations (10 per fault type,
+all 20 types) and all 500 normal test simulations. Mean first-flag latency is
+55.255 steps; median is 17 steps. Held-out normal window FPR is 1.54%
+(7,236/470,500). All 70 offline tests pass. The README and reports explicitly
+explain sparse responses to faults 3, 9, and 15 and the distinction between
+window-level FPR and the probability of any false alarm during a run.
+
+Review the new files as well as the tracked diff, then execute:
+
+```bash
+git status --short
+git diff --stat
+git add README.md data/README.md docs/WORKFLOW.md docs/EVALUATION.md src/spectradrift/__main__.py src/spectradrift/evaluation.py tests/test_evaluation.py results.json results.md
+git commit -m "feat: benchmark TEP fault latency and false positives"
+git push -u origin feat/benchmark-evaluation
+gh pr create --base main --head feat/benchmark-evaluation \
+  --title "Benchmark TEP fault latency and false positives" \
+  --body "Add onset-aware latency, explicit misses, per-fault and component breakdowns, held-out FPR, and generated actual results with provenance. Evaluate 200 faulty runs across all 20 types and all 500 normal test runs with frozen thresholds. Mean first-flag latency: 55.255 steps; median: 17 steps; window FPR: 1.54% (7,236/470,500). Document hard-fault and run-level false-alarm limitations. All 70 offline tests pass."
+```
+
 After reviewing and merging this PR, tell the assistant to continue with
-`feat/benchmark-evaluation`. Do not stage raw data, `.venv`, or local artifacts.
+`docs/portfolio-results` for the optional measured plot and final polish.
+Do not stage raw data, `.venv`, or local artifacts.
