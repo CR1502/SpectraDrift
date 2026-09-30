@@ -24,7 +24,7 @@
       "file_id": 3031241,
       "size_bytes": 24678017,
       "md5": "ec126484534331f85001d8c4ebce6d17",
-      "download_url": "https://dataverse.harvard.edu/api/access/datafile/3031241",
+      "download_url": "https://dataverse.harvard.edu/api/access/datafile/3031241?format=original",
       "purpose": "Normal-only model training and calibration on separate simulation runs"
     },
     {
@@ -33,7 +33,7 @@
       "file_id": 3031240,
       "size_bytes": 47327663,
       "md5": "38ad9810fc871026157086ae2c2f0ee9",
-      "download_url": "https://dataverse.harvard.edu/api/access/datafile/3031240",
+      "download_url": "https://dataverse.harvard.edu/api/access/datafile/3031240?format=original",
       "purpose": "Held-out normal-operation false-positive evaluation"
     },
     {
@@ -42,7 +42,7 @@
       "file_id": 3031243,
       "size_bytes": 836882037,
       "md5": "556bdb64c83021bc0c5f92e427753565",
-      "download_url": "https://dataverse.harvard.edu/api/access/datafile/3031243",
+      "download_url": "https://dataverse.harvard.edu/api/access/datafile/3031243?format=original",
       "purpose": "Evaluation only: fault detection latency and detection coverage"
     }
   ],

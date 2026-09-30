@@ -3,10 +3,10 @@
 A Python project for self-supervised drift detection in multivariate industrial
 sensor time series, benchmarked on the public Tennessee Eastman Process (TEP).
 
-**Current status: repository foundation.** The environment check works. Data
-loading, modeling, and evaluation will be implemented in separate feature
-branches. No benchmark has run yet, and no detection latency or false-positive
-rate is claimed.
+**Current status: data and preprocessing implemented.** Verified Harvard TEP
+downloads, complete-run loading, normal-only normalization, and causal window
+features work. Modeling and evaluation are next. No detection latency or
+false-positive rate is claimed yet.
 
 ## Local setup
 
@@ -20,7 +20,7 @@ python -m pip install --no-deps -e .
 python -m spectradrift
 ```
 
-The last command imports each runtime dependency and prints installed versions,
+The last command (or `python -m spectradrift doctor`) imports each runtime dependency and prints installed versions,
 any import errors, and whether the environment is ready. It exits with a failure
 code when dependencies cannot be imported. `spectradrift` is the equivalent
 installed command.
@@ -37,17 +37,49 @@ Raw data stays out of Git. The dataset is a process simulation benchmark;
 detecting its faults does not by itself demonstrate a measured lead time before
 output-quality deterioration in a real factory.
 
-## Planned two-signal baseline
+## Download and preprocess
 
-1. Split normal training simulations into fitting and calibration runs. Fit
+Run commands from the repository root:
+
+```bash
+# Fetch both normal sources, or reuse existing checksum-verified files.
+python -m spectradrift download-data
+
+# Inspect selected complete training simulations.
+python -m spectradrift inspect-data --file normal-training --runs 1 2 3
+
+# Prepare runs 1-10, split by simulation with seed 42.
+python -m spectradrift prepare-data --output artifacts/preprocessing
+
+# Run the offline data, leakage, and window-boundary tests.
+python -m unittest discover -s tests -v
+```
+
+The preparation command saves fitting/calibration NPZs plus a JSON manifest
+containing frozen normalization statistics, selected run IDs, parameters, and
+software versions. Existing artifacts are preserved; choose another `--output`
+directory for a new run. Raw data and generated artifacts are ignored by Git.
+
+The actual first preparation run used normal training simulations 1–10, with
+20-sample windows and stride 1. It produced **3,848 fitting windows** from eight
+simulations and **962 calibration windows** from two simulations. Each feature
+vector has 104 entries: 52 channel means followed by 52 population standard
+deviations. These are preprocessing counts, not detection metrics.
+
+See [docs/PREPROCESSING.md](docs/PREPROCESSING.md) for the artifact format and
+[docs/DATA_VALIDATION.md](docs/DATA_VALIDATION.md) for the actual validation run.
+
+## Two-signal baseline
+
+1. Implemented: split normal training simulations into fitting and calibration runs. Fit
    channel standardization on fitting data only. Create causal sliding-window
    features within each run, using channel means and standard deviations.
-2. Fit a lightweight PCA reconstruction model on fitting windows only. At
+2. Next: fit a lightweight PCA reconstruction model on fitting windows only. At
    inference, feature reconstruction error supplies the anomaly score.
-3. Independently compare each current sensor window with a fixed normal
+3. Next: independently compare each current sensor window with a fixed normal
    reference using the two-sample Kolmogorov–Smirnov statistic. Aggregate sensor
    statistics into a distribution-shift score.
-4. Set each score threshold from separate normal calibration runs. Flag when
+4. Next: set each score threshold from separate normal calibration runs. Flag when
    either score exceeds its threshold. Calibrate and report the combined flag's
    behavior; the OR rule can raise more false positives than either component.
 
