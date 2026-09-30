@@ -37,7 +37,7 @@ The assistant can create and switch local branches. The owner executes commits,
 pushes, and PR creation. Complete each PR and merge it into `main` before starting
 the next dependent branch. This keeps every PR based on reviewed code.
 
-## Current checkpoint: data and preprocessing
+## Completed checkpoint: data and preprocessing
 
 The implementation is on `feat/data-preprocessing`. Both normal-operation files
 have been downloaded and checksum-verified, the actual preparation run is
@@ -55,7 +55,28 @@ gh pr create --base main --head feat/data-preprocessing \
   --body "Add checksum-verified Harvard TEP downloads, complete-run validation, normal-only normalization, and causal mean/std window features. Validate on real normal-operation TEP data: 3,848 fitting and 962 calibration windows from disjoint simulations. All 33 offline tests pass. Detection metrics will be measured in the benchmark PR."
 ```
 
-After reviewing and merging this PR into `main`, tell the assistant to continue.
-The next branch is `feat/two-signal-detector`. Do not stage raw data, `.venv`, or
-local artifacts. Later checkpoints will provide exact commands and actual
-validation details.
+The data/preprocessing PR has been merged. Its commands above are historical.
+
+## Current checkpoint: two-signal detector
+
+The implementation is on `feat/two-signal-detector`, created from the merged
+`origin/main`. It adds normal-only PCA reconstruction scoring, an independent
+rolling KS statistic, empirical threshold calibration, the OR flag, and model
+save/reload and scoring commands.
+
+The real-data model has 55 PCA components. Its preliminary normal test check
+flagged 15 of 2,823 windows on three held-out runs (0.53% window-level FPR).
+All 54 tests pass. Scope and exact values are recorded in
+`docs/MODEL_VALIDATION.md`; fault latency remains for the next branch.
+
+```bash
+git add README.md docs/WORKFLOW.md docs/DETECTOR.md docs/MODEL_VALIDATION.md src/spectradrift/__main__.py src/spectradrift/models.py src/spectradrift/detector.py tests/test_models.py tests/test_detector.py
+git commit -m "feat: add normal-calibrated PCA and KS drift detector"
+git push -u origin feat/two-signal-detector
+gh pr create --base main --head feat/two-signal-detector \
+  --title "Add normal-calibrated PCA and KS drift detector" \
+  --body "Fit PCA reconstruction scoring and an independent rolling KS statistic on normal operation, calibrate thresholds on disjoint normal runs, and combine flags with an OR rule. Add safe model persistence and test scoring. Real TEP check: 55 PCA components; 15 flags in 2,823 held-out normal windows (0.53% FPR on three runs). All 54 tests pass. Fault latency is next."
+```
+
+After reviewing and merging this PR, tell the assistant to continue with
+`feat/benchmark-evaluation`. Do not stage raw data, `.venv`, or local artifacts.
