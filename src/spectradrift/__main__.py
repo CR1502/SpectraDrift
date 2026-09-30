@@ -40,7 +40,7 @@ def environment_check() -> int:
                 "dependencies": versions,
                 "errors": errors,
                 "environment_ready": not errors,
-                "benchmark_status": "not yet implemented",
+                "benchmark_status": "available through the benchmark command; doctor does not run it",
             },
             indent=2,
         )
@@ -92,6 +92,15 @@ def main() -> int:
     score.add_argument("--runs", nargs="+", type=int, default=[1, 2, 3])
     score.add_argument("--faults", nargs="+", type=int)
     score.add_argument("--output", type=Path, default=Path("artifacts/normal-check"))
+    benchmark = commands.add_parser("benchmark", help="Measure fault-onset latency and held-out normal false positives")
+    benchmark.add_argument("--model", type=Path, default=Path("artifacts/detector"))
+    benchmark.add_argument("--data-dir", type=Path, default=Path("data"))
+    benchmark.add_argument("--manifest", type=Path, default=Path("data/source.json"))
+    benchmark.add_argument("--normal-runs", nargs="+", type=int, default=list(range(1, 501)))
+    benchmark.add_argument("--fault-runs", nargs="+", type=int, default=list(range(1, 11)))
+    benchmark.add_argument("--faults", nargs="+", type=int, default=list(range(1, 21)))
+    benchmark.add_argument("--output", type=Path, default=Path("."))
+    benchmark.add_argument("--scores-output", type=Path, default=Path("artifacts/benchmark"))
     args = parser.parse_args()
     if args.command in (None, "doctor"):
         return environment_check()
@@ -150,6 +159,19 @@ def main() -> int:
                 source=args.file, run_ids=args.runs, fault_ids=args.faults, output_dir=args.output,
             )
             print(json.dumps(report, indent=2))
+        elif args.command == "benchmark":
+            from spectradrift.evaluation import run_benchmark
+            report = run_benchmark(
+                model_dir=args.model, data_dir=args.data_dir, manifest_path=args.manifest,
+                normal_run_ids=args.normal_runs, faulty_run_ids=args.fault_runs, fault_ids=args.faults,
+                output_dir=args.output, scores_dir=args.scores_output,
+            )
+            print(json.dumps({
+                "results": str(args.output / "results.json"),
+                "fault_latency": report["metrics"]["overall"]["combined"],
+                "normal_false_positives": report["metrics"]["normal_operation"]["signals"]["combined"],
+                "normal_eligible_windows": report["metrics"]["normal_operation"]["eligible_windows"],
+            }, indent=2))
     except (OSError, ValueError, KeyError, URLError) as exc:
         print(f"spectradrift: {exc}", file=sys.stderr)
         return 1
