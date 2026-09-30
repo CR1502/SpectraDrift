@@ -22,23 +22,42 @@ documented subset of complete simulation runs for the first benchmark rather
 than describe a subset run as a full-dataset evaluation. Subsetting after loading
 the RData file does not reduce the initial parsing memory requirement.
 
-You can download through the dataset page, or from the repository root with:
+The preferred command verifies both byte size and publisher MD5 before loading:
+
+```bash
+# Both normal sources; needed now.
+python -m spectradrift download-data
+
+# Faulty test source; needed for the later benchmark.
+python -m spectradrift download-data --files faulty-testing
+```
+
+The downloader identifies itself as SpectraDrift, requests the original RData
+file, retries transient network failures, and verifies a temporary download before
+publishing the final filename. It reuses verified existing files and refuses to
+overwrite existing files that fail validation. No Kaggle login or R installation
+is required. [Dataverse's Data Access API](https://guides.dataverse.org/en/latest/api/dataaccess.html)
+documents the original-file parameter used here.
+
+If an automated download is unavailable, use the dataset page, or these commands
+from the repository root. The loader still checks the published checksums:
 
 ```bash
 curl --fail --location --retry 3 \
-  https://dataverse.harvard.edu/api/access/datafile/3031241 \
+  'https://dataverse.harvard.edu/api/access/datafile/3031241?format=original' \
   --output data/TEP_FaultFree_Training.RData
 curl --fail --location --retry 3 \
-  https://dataverse.harvard.edu/api/access/datafile/3031240 \
+  'https://dataverse.harvard.edu/api/access/datafile/3031240?format=original' \
   --output data/TEP_FaultFree_Testing.RData
 curl --fail --location --retry 3 \
-  https://dataverse.harvard.edu/api/access/datafile/3031243 \
+  'https://dataverse.harvard.edu/api/access/datafile/3031243?format=original' \
   --output data/TEP_Faulty_Testing.RData
 ```
 
-These commands obtain data only. The loader and automated validation belong to
-the next feature branch. No raw data has been downloaded or evaluated in the
-foundation commit.
+The normal training and testing files have been downloaded and checksum-verified
+for the data/preprocessing validation. The faulty testing file has not yet been
+downloaded or evaluated. Synthetic test fixtures verify loader behavior but are
+never described as TEP benchmark results.
 
 Each table has three metadata columns (`faultNumber`, `simulationRun`, `sample`)
 and 52 process channels. Samples arrive every three minutes. Each test run has
