@@ -80,7 +80,7 @@ gh pr create --base main --head feat/two-signal-detector \
 
 The two-signal detector PR has been merged. Its commands above are historical.
 
-## Current checkpoint: benchmark evaluation
+## Completed checkpoint: benchmark evaluation
 
 The implementation is on `feat/benchmark-evaluation`, created from merged
 `origin/main`. It adds onset-aware latency, explicit misses and coverage,
@@ -107,6 +107,30 @@ gh pr create --base main --head feat/benchmark-evaluation \
   --body "Add onset-aware latency, explicit misses, per-fault and component breakdowns, held-out FPR, and generated actual results with provenance. Evaluate 200 faulty runs across all 20 types and all 500 normal test runs with frozen thresholds. Mean first-flag latency: 55.255 steps; median: 17 steps; window FPR: 1.54% (7,236/470,500). Document hard-fault and run-level false-alarm limitations. All 70 offline tests pass."
 ```
 
-After reviewing and merging this PR, tell the assistant to continue with
-`docs/portfolio-results` for the optional measured plot and final polish.
-Do not stage raw data, `.venv`, or local artifacts.
+The benchmark evaluation PR has been merged. Its commands above are historical.
+
+## Current checkpoint: portfolio results
+
+The assistant switched to `main`, pulled the merged changes with `--ff-only`,
+and created `docs/portfolio-results` from the updated main branch. This final
+part adds the actual-score figure, a checksum-validating headless plotting
+script, plot tests, figure reproduction notes, and evidence-backed resume wording.
+It brings the measured results to the top of the README without changing the
+detector, thresholds, selected benchmark runs, or original reports.
+
+All 80 offline tests pass. The actual figure has been rendered and visually
+checked, and its normal/fault example measurements agree with `results.json`.
+
+```bash
+git status --short
+git add README.md docs/WORKFLOW.md docs/PORTFOLIO.md docs/figures/README.md docs/figures/tep-monitoring.png scripts/plot_results.py tests/test_plot_results.py
+git commit -m "docs: present measured TEP results and reproducible monitoring plot"
+git push -u origin docs/portfolio-results
+gh pr create --base main --head docs/portfolio-results \
+  --title "Present measured results and reproducible monitoring plot" \
+  --body "Add a real-score TEP figure covering normal operation, a strong fault, and difficult fault 9. Validate archive hashes and frozen OR flags before plotting. Document figure reproduction, benchmark limitations, and evidence-backed resume wording. Original detector and benchmark reports are unchanged. All 80 offline tests pass."
+```
+
+After the owner reviews and merges this final PR, the requested end-to-end
+baseline and portfolio documentation are complete. Do not stage raw data,
+`.venv`, or local artifacts.

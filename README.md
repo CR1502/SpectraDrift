@@ -8,6 +8,51 @@ independent rolling Kolmogorov–Smirnov (KS) distribution-shift statistic. An
 actual benchmark covers all 20 fault types (10 simulations per type) and all
 500 held-out normal simulations. Measured results and limitations are below.
 
+## Measured benchmark results
+
+These numbers come from the actual code run saved in [results.json](results.json)
+and [results.md](results.md), using a frozen, normal-only model:
+
+| Metric | Measured value |
+| --- | --- |
+| Mean first-flag latency | 55.255 steps (165.765 minutes) |
+| Median first-flag latency | 17 steps (51 minutes) |
+| Held-out normal window false-positive rate | 1.54% (7,236 / 470,500 eligible windows) |
+| Fault runs with a post-onset flag | 200 / 200; zero misses under the first-flag definition |
+| Normal runs with at least one flag | 437 / 500 (87.4%) |
+
+Evaluation uses faulty test simulations 1–10 for each type 1–20, and normal test
+simulations 1–500. This covers every fault type, but not the full faulty release.
+All selected runs are complete. Labels are used only for evaluation.
+
+![Actual TEP scores for normal run 1, fault 1 run 1, and fault 9 run 1, showing the two score ratios, thresholds, flags, and shaded fault intervals.](docs/figures/tep-monitoring.png)
+
+The figure uses checksum-verified saved scores, not synthetic signals. Both
+scores are divided by their own frozen thresholds; values above 1 flag. Pink
+ticks show the combined OR flag, and shading marks the injected fault interval.
+Axes use a log scale with independent vertical limits. These fixed examples
+include a normal false alarm, a strong fault response, and sparse response to
+difficult fault 9. They illustrate behavior, not aggregate performance.
+[Figure provenance and reproduction](docs/figures/README.md).
+
+Latency is the first flagged causal window endpoint at or after onset minus
+sample 161 (one-based). Each step represents three minutes. Means and medians
+are pooled across detected runs; misses have null latency and explicit counts.
+The equal-fault-weighted mean is also 55.255 steps; the median of per-fault
+medians is 19.25 steps. See the generated breakdown for every fault type and
+the individual PCA/KS results.
+
+FPR counts flagged eligible normal windows, excluding the incomplete-window
+warm-up. Overlapping windows are dependent: 1.54% is **not** the probability of
+any false alarm during a simulation, as the 87.4% run-level result demonstrates.
+Normal prefixes of faulty runs are reported separately.
+
+An eventual first flag does not prove fault attribution. Fault types 3, 9, and
+15 have long delays and sparse post-onset flags (1.88–2.49%), close to the normal
+window FPR. Consequently, 200/200 first flags should not be interpreted as
+reliable diagnosis of all faults. This is an honest baseline, not a validated
+industrial early-warning system; quality-loss lead time is not measured.
+
 ## Local setup
 
 Use Python 3.11–3.13 (Python 3.12 is the development environment).
@@ -122,41 +167,6 @@ are not presented as valid significance levels for autocorrelated sensors.
 Fault labels are reserved for evaluating results, never fitting normalization,
 PCA, reference distributions, thresholds, or hyperparameters.
 
-## Measured benchmark results
-
-These numbers come from the actual code run saved in [results.json](results.json)
-and [results.md](results.md), using the frozen model above:
-
-| Metric | Measured value |
-| --- | --- |
-| Mean first-flag latency | 55.255 steps (165.765 minutes) |
-| Median first-flag latency | 17 steps (51 minutes) |
-| Held-out normal window false-positive rate | 1.54% (7,236 / 470,500 eligible windows) |
-| Fault runs with a post-onset flag | 200 / 200; zero misses under the first-flag definition |
-| Normal runs with at least one flag | 437 / 500 (87.4%) |
-
-Evaluation uses faulty test simulations 1–10 for each type 1–20, and normal test
-simulations 1–500. This covers every fault type, but not the full faulty release.
-All selected runs are complete. Labels are used only for evaluation.
-
-Latency is the first flagged causal window endpoint at or after onset minus
-sample 161 (one-based). Each step represents three minutes. Means and medians
-are pooled across detected runs; misses have null latency and explicit counts.
-The equal-fault-weighted mean is also 55.255 steps; the median of per-fault
-medians is 19.25 steps. See the generated breakdown for every fault type and
-the individual PCA/KS results.
-
-FPR counts flagged eligible normal windows, excluding the incomplete-window
-warm-up. Overlapping windows are dependent: 1.54% is **not** the probability of
-any false alarm during a simulation, as the 87.4% run-level result demonstrates.
-Normal prefixes of faulty runs are reported separately.
-
-An eventual first flag does not prove fault attribution. Fault types 3, 9, and
-15 have long delays and sparse post-onset flags (1.88–2.49%), close to the normal
-window FPR. Consequently, 200/200 first flags should not be interpreted as
-reliable diagnosis of all faults. This is an honest baseline, not a validated
-industrial early-warning system; quality-loss lead time is not measured.
-
 ## Reproduce the benchmark
 
 After setup and the three-file download above:
@@ -169,6 +179,10 @@ python -m spectradrift train-detector --output artifacts/detector
 python -m spectradrift benchmark --model artifacts/detector \
   --output artifacts/reproduction/results \
   --scores-output artifacts/reproduction/scores
+
+# Plot these regenerated scores without replacing the checked-in figure.
+python scripts/plot_results.py --results artifacts/reproduction/results/results.json \
+  --output artifacts/reproduction/tep-monitoring.png
 
 python -m unittest discover -s tests -v
 ```
@@ -185,6 +199,13 @@ requires several GB of available memory even when selecting a run subset.
 Manual download instructions are in [data/README.md](data/README.md); detailed
 metric definitions, missed-fault handling, and larger-run commands are in
 [docs/EVALUATION.md](docs/EVALUATION.md).
+
+The checked-in reports and figure can be reviewed without downloading the data.
+The 80 offline tests use synthetic fixtures to verify software behavior, not to
+claim TEP performance; they include headless plot rendering and provenance checks.
+See [docs/PORTFOLIO.md](docs/PORTFOLIO.md) for concise, evidence-backed resume
+wording and the distinction between the early-warning objective and measured
+simulation results.
 
 ## Development and GitHub workflow
 
