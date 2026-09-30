@@ -3,10 +3,10 @@
 A Python project for self-supervised drift detection in multivariate industrial
 sensor time series, benchmarked on the public Tennessee Eastman Process (TEP).
 
-**Current status: data and preprocessing implemented.** Verified Harvard TEP
-downloads, complete-run loading, normal-only normalization, and causal window
-features work. Modeling and evaluation are next. No detection latency or
-false-positive rate is claimed yet.
+**Current status: the two-signal detector works.** Verified Harvard TEP data
+loading, normal-only normalization, causal windows, PCA reconstruction scoring,
+and independent KS drift scoring are implemented. A preliminary held-out normal
+check is recorded below. Fault-onset latency and the full benchmark are next.
 
 ## Local setup
 
@@ -20,10 +20,10 @@ python -m pip install --no-deps -e .
 python -m spectradrift
 ```
 
-The last command (or `python -m spectradrift doctor`) imports each runtime dependency and prints installed versions,
-any import errors, and whether the environment is ready. It exits with a failure
-code when dependencies cannot be imported. `spectradrift` is the equivalent
-installed command.
+The last command (or `python -m spectradrift doctor`) imports each runtime
+dependency and prints installed versions, any import errors, and whether the
+environment is ready. It exits with a failure code when dependencies cannot be
+imported. `spectradrift` is the equivalent installed command.
 
 ## Dataset
 
@@ -71,22 +71,59 @@ See [docs/PREPROCESSING.md](docs/PREPROCESSING.md) for the artifact format and
 
 ## Two-signal baseline
 
-1. Implemented: split normal training simulations into fitting and calibration runs. Fit
+1. Split normal training simulations into fitting and calibration runs. Fit
    channel standardization on fitting data only. Create causal sliding-window
    features within each run, using channel means and standard deviations.
-2. Next: fit a lightweight PCA reconstruction model on fitting windows only. At
+2. Fit a lightweight PCA reconstruction model on fitting windows only. At
    inference, feature reconstruction error supplies the anomaly score.
-3. Next: independently compare each current sensor window with a fixed normal
+3. Independently compare each current sensor window with a fixed normal
    reference using the two-sample Kolmogorov–Smirnov statistic. Aggregate sensor
    statistics into a distribution-shift score.
-4. Next: set each score threshold from separate normal calibration runs. Flag when
+4. Set each score threshold from separate normal calibration runs. Flag when
    either score exceeds its threshold. Calibrate and report the combined flag's
    behavior; the OR rule can raise more false positives than either component.
 
-The KS statistic will be an empirical shift score, with thresholds calibrated
+PCA standardizes the 104 window features using fitting data only and retains at
+least 95% of their variance. Its anomaly score is reconstruction mean squared
+error in that feature space. KS uses up to 512 reference readings sampled from
+normal fitting runs; its drift score is the maximum empirical KS distance across
+the 52 channels. Both components and normalization stay fixed at inference.
+
+The default target calibration flag rate is 1%. Each component threshold is the
+99.5th percentile of its normal calibration scores, using NumPy's `higher`
+quantile method. Comparisons are strict: a score equal to its threshold does not
+flag. The target controls the observed calibration allowance; it is not a
+guarantee for unseen runs.
+
+```bash
+# Fit on normal training data and calibrate on disjoint normal training runs.
+python -m spectradrift train-detector --output artifacts/detector
+
+# Apply the saved model to three independent normal test simulations.
+python -m spectradrift score-data --model artifacts/detector \
+  --file normal-testing --runs 1 2 3 --output artifacts/normal-check
+```
+
+Both commands preserve existing artifacts; use new output directories for
+repeated runs. Training loads the verified normal training source directly and
+recreates the documented split, so a prior `prepare-data` run is optional.
+
+The actual first model used **55 PCA components**. On normal test simulations
+1–3, it flagged **15 of 2,823 eligible windows**, giving a preliminary
+window-level false-positive rate of **0.53%**. This checks three complete normal
+simulations, not all normal test runs. Each of the three simulations had at least
+one flag. Overlapping windows mean this percentage is not a per-simulation false
+alarm probability. No faulty data was used to choose or adjust thresholds.
+
+See [docs/DETECTOR.md](docs/DETECTOR.md) for the scoring rule and saved model
+format, and [docs/MODEL_VALIDATION.md](docs/MODEL_VALIDATION.md) for measured
+thresholds, component counts, and per-run results. Detection latency has not yet
+been measured.
+
+The KS statistic is an empirical shift score, with thresholds calibrated
 on normal time series. Nominal KS p-values assume independent observations and
-will not be presented as valid significance levels for autocorrelated sensors.
-Fault labels will be used only to evaluate results, never to fit normalization,
+are not presented as valid significance levels for autocorrelated sensors.
+Fault labels are reserved for evaluating results, never fitting normalization,
 PCA, reference distributions, thresholds, or hyperparameters.
 
 ## Planned evaluation

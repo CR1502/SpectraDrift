@@ -1,4 +1,4 @@
-"""Environment, dataset acquisition, and preprocessing commands."""
+"""Environment, data, preprocessing, and two-signal detector commands."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def environment_check() -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="SpectraDrift TEP data pipeline")
+    parser = argparse.ArgumentParser(description="SpectraDrift self-supervised TEP monitoring")
     parser.add_argument("--version", action="version", version=__version__)
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("doctor", help="Check installed dependencies (also the default command)")
@@ -72,6 +72,26 @@ def main() -> int:
     prepare.add_argument("--calibration-fraction", type=float, default=0.2)
     prepare.add_argument("--seed", type=int, default=42)
     prepare.add_argument("--output", type=Path, default=Path("artifacts/preprocessing"))
+    train = commands.add_parser("train-detector", help="Fit PCA/KS and calibrate thresholds using normal runs only")
+    train.add_argument("--data-dir", type=Path, default=Path("data"))
+    train.add_argument("--manifest", type=Path, default=Path("data/source.json"))
+    train.add_argument("--runs", nargs="+", type=int, default=list(range(1, 11)))
+    train.add_argument("--calibration-fraction", type=float, default=0.2)
+    train.add_argument("--seed", type=int, default=42)
+    train.add_argument("--window-size", type=int, default=20)
+    train.add_argument("--stride", type=int, default=1)
+    train.add_argument("--variance-retained", type=float, default=0.95)
+    train.add_argument("--reference-size", type=int, default=512)
+    train.add_argument("--target-flag-rate", type=float, default=0.01)
+    train.add_argument("--output", type=Path, default=Path("artifacts/detector"))
+    score = commands.add_parser("score-data", help="Apply a frozen detector to held-out test simulations")
+    score.add_argument("--model", type=Path, default=Path("artifacts/detector"))
+    score.add_argument("--data-dir", type=Path, default=Path("data"))
+    score.add_argument("--manifest", type=Path, default=Path("data/source.json"))
+    score.add_argument("--file", choices=["normal-testing", "faulty-testing"], default="normal-testing")
+    score.add_argument("--runs", nargs="+", type=int, default=[1, 2, 3])
+    score.add_argument("--faults", nargs="+", type=int)
+    score.add_argument("--output", type=Path, default=Path("artifacts/normal-check"))
     args = parser.parse_args()
     if args.command in (None, "doctor"):
         return environment_check()
@@ -107,6 +127,29 @@ def main() -> int:
                 "partitions": report["partitions"],
                 "benchmark_status": report["benchmark_status"],
             }, indent=2))
+        elif args.command == "train-detector":
+            from spectradrift.detector import train_from_data
+            record = train_from_data(
+                data_dir=args.data_dir, manifest_path=args.manifest, run_ids=args.runs,
+                calibration_fraction=args.calibration_fraction, seed=args.seed,
+                window_size=args.window_size, stride=args.stride,
+                variance_retained=args.variance_retained, reference_size=args.reference_size,
+                target_flag_rate=args.target_flag_rate, output_dir=args.output,
+            )
+            print(json.dumps({
+                "manifest": str(args.output / "manifest.json"),
+                "pca_components": record["training"]["pca_components"],
+                "anomaly_threshold": record["anomaly_threshold"],
+                "drift_threshold": record["drift_threshold"],
+                "calibration": record["training"]["calibration"],
+            }, indent=2))
+        elif args.command == "score-data":
+            from spectradrift.detector import score_dataset
+            report = score_dataset(
+                model_dir=args.model, data_dir=args.data_dir, manifest_path=args.manifest,
+                source=args.file, run_ids=args.runs, fault_ids=args.faults, output_dir=args.output,
+            )
+            print(json.dumps(report, indent=2))
     except (OSError, ValueError, KeyError, URLError) as exc:
         print(f"spectradrift: {exc}", file=sys.stderr)
         return 1
